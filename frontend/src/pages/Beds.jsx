@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
+import { toast } from 'react-toastify';
 
 function Beds() {
   const navigate = useNavigate();
@@ -66,58 +67,59 @@ function Beds() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setMensagem('');
+  e.preventDefault();
+  setMensagem('');
 
-    if (!numero || !setor || !tipo || !status) {
-      setMensagem('Preencha todos os campos.');
-      return;
+  if (!numero || !setor || !tipo || !status) {
+    toast.warning('Preencha todos os campos!');
+    return;
+  }
+
+  try {
+    if (editandoId) {
+      await api.put(
+        `/beds/${editandoId}`,
+        {
+          numero,
+          setor,
+          tipo,
+          status
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      toast.success('Leito atualizado com sucesso!');
+    } else {
+      await api.post(
+        '/beds',
+        {
+          numero,
+          setor,
+          tipo,
+          status
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      toast.success('Leito cadastrado com sucesso!');
     }
 
-    try {
-      if (editandoId) {
-        await api.put(
-          `/beds/${editandoId}`,
-          {
-            numero,
-            setor,
-            tipo,
-            status
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          }
-        );
+    limparFormulario();
+    carregarLeitos();
 
-        setMensagem('Leito atualizado com sucesso.');
-      } else {
-        await api.post(
-          '/beds',
-          {
-            numero,
-            setor,
-            tipo,
-            status
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          }
-        );
-
-        setMensagem('Leito cadastrado com sucesso.');
-      }
-
-      limparFormulario();
-      carregarLeitos();
-    } catch (error) {
-      const erroBackend = error.response?.data?.message;
-      setMensagem(erroBackend || 'Erro ao salvar leito.');
-    }
-  };
+  } catch (error) {
+    const erroBackend = error.response?.data?.message;
+    toast.error(erroBackend || 'Erro ao salvar leito.');
+  }
+};
 
   const handleEditar = (bed) => {
     setNumero(bed.numero);
@@ -129,38 +131,35 @@ function Beds() {
   };
 
   const handleExcluir = async (id) => {
-    const confirmar = window.confirm('Deseja realmente excluir este leito?');
+  const confirmar = window.confirm('Deseja realmente excluir este leito?');
 
-    if (!confirmar) {
-      return;
-    }
+  if (!confirmar) return;
 
-    try {
-      setMensagem('');
-
-      await api.delete(`/beds/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-
-      setMensagem('Leito excluído com sucesso.');
-
-      if (editandoId === id) {
-        limparFormulario();
+  try {
+    await api.delete(`/beds/${id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
       }
+    });
 
-      carregarLeitos();
-    } catch (error) {
-      const erroBackend = error.response?.data?.message;
-      setMensagem(erroBackend || 'Erro ao excluir leito.');
+    toast.success('Leito excluído com sucesso!');
+
+    if (editandoId === id) {
+      limparFormulario();
     }
-  };
+
+    carregarLeitos();
+
+  } catch (error) {
+    const erroBackend = error.response?.data?.message;
+    toast.error(erroBackend || 'Erro ao excluir leito.');
+  }
+};
 
   const handleCancelarEdicao = () => {
-    limparFormulario();
-    setMensagem('Edição cancelada.');
-  };
+  limparFormulario();
+  toast.info('Edição cancelada.');
+};
 
   const handleLogout = () => {
     localStorage.removeItem('token');

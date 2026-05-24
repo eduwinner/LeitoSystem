@@ -3,6 +3,8 @@ import Patients from "./pages/Patients";
 import Login from './pages/Login';
 import Beds from './pages/Beds';
 import Dashboard from './pages/Dashboard';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 function App() {
   return (
@@ -13,6 +15,9 @@ function App() {
         <Route path="/patients" element={<Patients />} />
         <Route path="/dashboard" element={<Dashboard />} />
       </Routes>
+
+      <ToastContainer position="top-right" autoClose={3000} />
+      
     </BrowserRouter>
   );
 }

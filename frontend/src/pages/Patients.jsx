@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
+import { toast } from 'react-toastify';
 
 
 function Patients() {
@@ -13,6 +14,7 @@ function Patients() {
   const [sexo, setSexo] = useState('');
   const [telefone, setTelefone] = useState('');
   const [mensagem, setMensagem] = useState('');
+  const [editandoId, setEditandoId] = useState(null);
 
   const token = localStorage.getItem('token');
 
@@ -40,9 +42,28 @@ function Patients() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    try {
+  try {
+    if (editandoId) {
+      await api.put(
+        `/patients/${editandoId}`,
+        {
+          nome,
+          cpf,
+          dataNascimento,
+          sexo,
+          telefone
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      toast.success('Paciente atualizado com sucesso!');
+    } else {
       await api.post(
         '/patients',
         {
@@ -59,19 +80,51 @@ function Patients() {
         }
       );
 
-      setMensagem('Paciente cadastrado com sucesso.');
-
-      setNome('');
-      setCpf('');
-      setDataNascimento('');
-      setSexo('');
-      setTelefone('');
-
-      carregarPacientes();
-    } catch (error) {
-      setMensagem('Erro ao cadastrar paciente.');
+      toast.success('Paciente cadastrado com sucesso!');
     }
-  };
+
+    // limpar formulário
+    setNome('');
+    setCpf('');
+    setDataNascimento('');
+    setSexo('');
+    setTelefone('');
+    setEditandoId(null);
+
+    carregarPacientes();
+
+  } catch (error) {
+    const erroBackend = error.response?.data?.message;
+
+    toast.error(erroBackend || 'Erro ao salvar paciente.');
+  }
+};
+
+  const handleEditar = (patient) => {
+  setNome(patient.nome);
+  setCpf(patient.cpf);
+  setDataNascimento(patient.dataNascimento);
+  setSexo(patient.sexo);
+  setTelefone(patient.telefone);
+  setEditandoId(patient.id);
+};
+
+const handleExcluir = async (id) => {
+  const confirmar = window.confirm('Deseja excluir este paciente?');
+
+  if (!confirmar) return;
+
+  try {
+    await api.delete(`/patients/${id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    setMensagem('Paciente excluído com sucesso');
+    carregarPacientes();
+  } catch (error) {
+    setMensagem('Erro ao excluir paciente');
+  }
+};
 
   return (
     <div style={styles.container}>
@@ -170,6 +223,25 @@ function Patients() {
                     <td style={styles.td}>{p.dataNascimento}</td>
                     <td style={styles.td}>{p.sexo}</td>
                     <td style={styles.td}>{p.telefone}</td>
+
+                    
+                    <td style={styles.td}>
+                      <div style={styles.actions}>
+                        <button
+                          onClick={() => handleEditar(p)}
+                          style={styles.editButton}
+                        >
+                          Editar
+                        </button>
+
+                        <button
+                          onClick={() => handleExcluir(p.id)}
+                          style={styles.deleteButton}
+                        >
+                          Excluir
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -182,6 +254,34 @@ function Patients() {
 }
 
 const styles = {
+
+  actions: {
+  display: 'flex',
+  gap: '8px'
+},
+
+editButton: {
+  backgroundColor: '#0ea5e9',
+  color: '#ffffff',
+  border: 'none',
+  padding: '8px 12px',
+  borderRadius: '8px',
+  cursor: 'pointer',
+  fontSize: '13px',
+  transition: '0.2s'
+},
+
+deleteButton: {
+  backgroundColor: '#dc2626',
+  color: '#ffffff',
+  border: 'none',
+  padding: '8px 12px',
+  borderRadius: '8px',
+  cursor: 'pointer',
+  fontSize: '13px',
+  transition: '0.2s'
+},
+
   container: {
     minHeight: '100vh',
     backgroundColor: '#f8fafc',
@@ -264,5 +364,7 @@ const styles = {
     marginTop: '12px'
   }
 };
+
+
 
 export default Patients;

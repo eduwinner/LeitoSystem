@@ -111,6 +111,7 @@ function Dashboard() {
           <Card
             title="Disponíveis"
             value={dados.disponiveis}
+            cor="#22c55e"
             onClick={() => carregarLeitos('disponivel')}
             ativo={filtroSelecionado === 'disponivel'}
           />
@@ -118,6 +119,7 @@ function Dashboard() {
           <Card
             title="Ocupados"
             value={dados.ocupados}
+            cor="#ef4444"
             onClick={() => carregarLeitos('ocupado')}
             ativo={filtroSelecionado === 'ocupado'}
           />
@@ -125,6 +127,7 @@ function Dashboard() {
           <Card
             title="Manutenção"
             value={dados.manutencao}
+            cor="#f59e0b"
             onClick={() => carregarLeitos('manutencao')}
             ativo={filtroSelecionado === 'manutencao'}
           />
@@ -136,7 +139,6 @@ function Dashboard() {
         </div>
       )}
 
-      {/* LISTA DE LEITOS */}
       {filtroSelecionado !== null && (
         <div style={styles.listaContainer}>
           <h2 style={styles.subTitle}>
@@ -157,11 +159,19 @@ function Dashboard() {
               </thead>
               <tbody>
                 {leitos.map((bed) => (
-                  <tr key={bed.id}>
+                  <tr key={bed.id} style={styles.tr}>
                     <td style={styles.td}>{bed.numero}</td>
                     <td style={styles.td}>{bed.setor}</td>
                     <td style={styles.td}>{bed.tipo}</td>
-                    <td style={styles.td}>{bed.status}</td>
+                    <td style={styles.td}>
+                      <span style={{
+                        ...styles.badge,
+                        backgroundColor: getStatusBg(bed.status),
+                        color: getStatusColor(bed.status)
+                      }}>
+                        {bed.status}
+                      </span>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -173,15 +183,18 @@ function Dashboard() {
   );
 }
 
-function Card({ title, value, onClick, ativo }) {
+function Card({ title, value, onClick, ativo, cor }) {
   return (
     <div
       style={{
         ...styles.card,
+        borderLeft: cor ? `6px solid ${cor}` : 'none',
         border: ativo ? '2px solid #2563eb' : 'none',
         cursor: onClick ? 'pointer' : 'default'
       }}
       onClick={onClick}
+      onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+      onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
     >
       <h3 style={styles.cardTitle}>{title}</h3>
       <p style={styles.cardValue}>{value}</p>
@@ -189,20 +202,31 @@ function Card({ title, value, onClick, ativo }) {
   );
 }
 
+function getStatusColor(status) {
+  if (status === 'disponivel') return '#166534';
+  if (status === 'ocupado') return '#991b1b';
+  if (status === 'manutencao') return '#92400e';
+}
+
+function getStatusBg(status) {
+  if (status === 'disponivel') return '#dcfce7';
+  if (status === 'ocupado') return '#fee2e2';
+  if (status === 'manutencao') return '#fef3c7';
+}
+
 const styles = {
   container: {
     minHeight: '100vh',
-    backgroundColor: '#f8fafc',
-    padding: '24px'
+    background: 'linear-gradient(135deg, #1e3a8a, #2563eb)',
+    padding: '24px',
+    color: '#fff'
   },
 
   header: {
     display: 'flex',
     justifyContent: 'space-between',
-    alignItems: 'center',
     marginBottom: '24px',
-    flexWrap: 'wrap',
-    gap: '12px'
+    flexWrap: 'wrap'
   },
 
   title: {
@@ -211,12 +235,11 @@ const styles = {
 
   actions: {
     display: 'flex',
-    gap: '10px',
-    flexWrap: 'wrap'
+    gap: '10px'
   },
 
   navButton: {
-    backgroundColor: '#2563eb',
+    backgroundColor: '#16a34a',
     color: '#fff',
     border: 'none',
     padding: '10px 14px',
@@ -242,29 +265,28 @@ const styles = {
   card: {
     backgroundColor: '#ffffff',
     padding: '20px',
-    borderRadius: '12px',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-    textAlign: 'center'
+    borderRadius: '16px',
+    textAlign: 'center',
+    color: '#0f172a',
+    boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
+    transition: 'all 0.2s ease'
   },
 
   cardTitle: {
-    margin: 0,
-    marginBottom: '8px',
-    color: '#334155'
+    marginBottom: '8px'
   },
 
   cardValue: {
-    fontSize: '26px',
-    fontWeight: 'bold',
-    color: '#0f172a'
+    fontSize: '28px',
+    fontWeight: 'bold'
   },
 
   listaContainer: {
     marginTop: '32px',
     backgroundColor: '#fff',
     padding: '20px',
-    borderRadius: '12px',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
+    borderRadius: '16px',
+    color: '#000'
   },
 
   subTitle: {
@@ -277,19 +299,27 @@ const styles = {
   },
 
   th: {
-    textAlign: 'left',
-    padding: '10px',
-    borderBottom: '1px solid #ccc'
+    padding: '12px',
+    borderBottom: '2px solid #e2e8f0'
   },
 
   td: {
-    padding: '10px',
-    borderBottom: '1px solid #eee'
+    padding: '12px',
+    borderBottom: '1px solid #e2e8f0'
+  },
+
+  tr: {
+    transition: 'background 0.2s'
+  },
+
+  badge: {
+    padding: '6px 10px',
+    borderRadius: '999px',
+    fontWeight: 'bold'
   },
 
   error: {
-    color: '#b91c1c',
-    marginBottom: '12px'
+    color: '#fecaca'
   },
 
   loading: {
