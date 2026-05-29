@@ -1,6 +1,7 @@
 const Bed = require('../models/Bed');
 const Patient = require('../models/Patient');
 const BedHistory = require('../models/BedHistory');
+const User = require('../models/User');
 
 const listarLeitos = async (req, res) => {
   try {
@@ -75,7 +76,7 @@ const criarLeito = async (req, res) => {
 const atualizarLeito = async (req, res) => {
   try {
     const { id } = req.params;
-    const { numero, setor, tipo, status } = req.body;
+    const { numero, setor, tipo, status, responsavelId } = req.body;
 
     const bed = await Bed.findByPk(id);
 
@@ -83,15 +84,29 @@ const atualizarLeito = async (req, res) => {
       return res.status(404).json({ message: 'Leito não encontrado.' });
     }
 
+    if (status === 'manutencao' && !responsavelId) {
+      return res.status(400).json({ message: 'Informe o responsável pela manutenção.' });
+    }
+
     const statusAnterior = bed.status;
-    await bed.update({ numero, setor, tipo, status });
+
+    const responsavel = (status === 'manutencao' && responsavelId)
+      ? await User.findByPk(responsavelId, { attributes: ['id', 'nome'] })
+      : null;
+
+    await bed.update({
+      numero, setor, tipo, status,
+      responsavelManutencaoNome: status === 'manutencao' ? (responsavel?.nome || null) : null
+    });
 
     if (status === 'manutencao' && statusAnterior !== 'manutencao') {
       await BedHistory.create({
         bedId: bed.id, bedNumero: bed.numero,
         patientId: null, patientNome: null,
         acao: 'manutencao',
-        userId: req.user?.id || null, userNome: req.user?.nome || null
+        userId: req.user?.id || null, userNome: req.user?.nome || null,
+        responsavelId: responsavel?.id || null,
+        responsavelNome: responsavel?.nome || null
       });
     }
 
@@ -188,16 +203,19 @@ const liberar = async (req, res) => {
 
     const patientId = bed.patientId;
     const patientNome = bed.patient?.nome || null;
+    const responsavelNome = bed.responsavelManutencaoNome || null;
 
     bed.status = 'disponivel';
     bed.patientId = null;
+    bed.responsavelManutencaoNome = null;
     await bed.save();
 
     await BedHistory.create({
       bedId: bed.id, bedNumero: bed.numero,
       patientId, patientNome,
       acao: 'liberado',
-      userId: req.user?.id || null, userNome: req.user?.nome || null
+      userId: req.user?.id || null, userNome: req.user?.nome || null,
+      responsavelNome
     });
 
     res.json(bed);

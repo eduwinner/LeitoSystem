@@ -26,6 +26,9 @@ function Beds() {
   const [modalOcupar, setModalOcupar] = useState(null);
   const [pacienteSelecionado, setPacienteSelecionado] = useState('');
   const [buscaPaciente, setBuscaPaciente] = useState('');
+  const [modalManutencao, setModalManutencao] = useState(null);
+  const [responsavelSelecionado, setResponsavelSelecionado] = useState('');
+  const [servicosGerais, setServicosGerais] = useState([]);
   const [mostrarInativos, setMostrarInativos] = useState(false);
   const [bedInativos, setBedInativos] = useState([]);
 
@@ -36,6 +39,7 @@ function Beds() {
     if (!token) { navigate('/'); return; }
     carregarLeitos(1);
     carregarPacientes();
+    carregarServicosGerais();
   }, []);
 
   const carregarLeitos = async (pag = pagina, setor = filtroSetor, sts = filtroStatus) => {
@@ -91,6 +95,13 @@ function Beds() {
     }
   };
 
+  const carregarServicosGerais = async () => {
+    try {
+      const response = await api.get('/users/servicos-gerais', { headers: { Authorization: `Bearer ${token}` } });
+      setServicosGerais(response.data);
+    } catch {}
+  };
+
   const carregarPacientes = async () => {
     try {
       const response = await api.get('/patients');
@@ -129,14 +140,24 @@ function Beds() {
     }
   };
 
-  const handleManutenção = async (bed) => {
+  const handleManutenção = (bed) => {
+    setResponsavelSelecionado('');
+    setModalManutencao(bed);
+  };
+
+  const confirmarManutencao = async () => {
+    if (!responsavelSelecionado) {
+      toast.warning('Selecione o responsável pela manutenção.');
+      return;
+    }
     try {
       await api.put(
-        `/beds/${bed.id}`,
-        { numero: bed.numero, setor: bed.setor, tipo: bed.tipo, status: 'manutencao' },
+        `/beds/${modalManutencao.id}`,
+        { numero: modalManutencao.numero, setor: modalManutencao.setor, tipo: modalManutencao.tipo, status: 'manutencao', responsavelId: responsavelSelecionado },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       toast.success('Leito colocado em manutenção.');
+      setModalManutencao(null);
       carregarLeitos();
     } catch (error) {
       toast.error(error.response?.data?.message || 'Erro ao atualizar leito.');
@@ -418,6 +439,7 @@ function Beds() {
                   <th style={styles.th}>Setor</th>
                   <th style={styles.th}>Tipo</th>
                   <th style={styles.th}>Status</th>
+                  <th style={styles.th}>Responsável</th>
                   <th style={styles.th}>Ações</th>
                 </tr>
               </thead>
@@ -439,6 +461,12 @@ function Beds() {
                       </span>
                     </td>
                     <td style={styles.td}>
+                      {bed.status === 'manutencao' && bed.responsavelManutencaoNome
+                        ? <span style={styles.responsavelTag}>{bed.responsavelManutencaoNome}</span>
+                        : <span style={{ color: '#94a3b8' }}>—</span>
+                      }
+                    </td>
+                    <td style={styles.td}>
                       <div style={styles.actions}>
                         {bed.status === 'disponivel' && ['admin','medico','enfermeiro','recepcionista'].includes(usuario?.perfil) && (
                           <button onClick={() => handleOcupar(bed)} style={styles.ocuparButton}>Alocar</button>
@@ -446,7 +474,10 @@ function Beds() {
                         {bed.status === 'disponivel' && ['admin','medico','enfermeiro'].includes(usuario?.perfil) && (
                           <button onClick={() => handleManutenção(bed)} style={styles.manutencaoButton}>Manutenção</button>
                         )}
-                        {(bed.status === 'ocupado' || bed.status === 'manutencao') && ['admin','medico','enfermeiro'].includes(usuario?.perfil) && (
+                        {bed.status === 'ocupado' && ['admin','medico','enfermeiro'].includes(usuario?.perfil) && (
+                          <button onClick={() => handleLiberar(bed)} style={styles.liberarButton}>Liberar</button>
+                        )}
+                        {bed.status === 'manutencao' && ['admin','medico','enfermeiro','servicos_gerais'].includes(usuario?.perfil) && (
                           <button onClick={() => handleLiberar(bed)} style={styles.liberarButton}>Liberar</button>
                         )}
                         {usuario?.perfil === 'admin' && (
@@ -540,6 +571,32 @@ function Beds() {
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {modalManutencao && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modalCard}>
+            <h3 style={styles.modalTitle}>Manutenção — Leito {modalManutencao.numero}</h3>
+            <p style={styles.modalSub}>{modalManutencao.setor} — {formatarTipo(modalManutencao.tipo)}</p>
+            <select
+              value={responsavelSelecionado}
+              onChange={(e) => setResponsavelSelecionado(e.target.value)}
+              style={styles.input}
+            >
+              <option value="">Selecione o responsável (Serviços Gerais)</option>
+              {servicosGerais.length === 0
+                ? <option disabled>Nenhum usuário de Serviços Gerais cadastrado</option>
+                : servicosGerais.map((u) => (
+                    <option key={u.id} value={u.id}>{u.nome}</option>
+                  ))
+              }
+            </select>
+            <div style={styles.modalActions}>
+              <button onClick={confirmarManutencao} style={styles.manutencaoButton}>Confirmar</button>
+              <button onClick={() => setModalManutencao(null)} style={styles.secondaryButton}>Cancelar</button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -891,6 +948,15 @@ const styles = {
     color: '#64748b',
     alignSelf: 'center',
     marginLeft: 'auto'
+  },
+  responsavelTag: {
+    display: 'inline-block',
+    backgroundColor: '#ffedd5',
+    color: '#9a3412',
+    padding: '3px 8px',
+    borderRadius: '6px',
+    fontSize: '12px',
+    fontWeight: '600'
   },
   btnInativos: {
     backgroundColor: '#475569',

@@ -21,6 +21,9 @@ function Dashboard() {
   const [modalOcupar, setModalOcupar] = useState(null);
   const [pacienteSelecionado, setPacienteSelecionado] = useState('');
   const [buscaPaciente, setBuscaPaciente] = useState('');
+  const [modalManutencao, setModalManutencao] = useState(null);
+  const [responsavelSelecionado, setResponsavelSelecionado] = useState('');
+  const [servicosGerais, setServicosGerais] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
   const [mostrarUsuarios, setMostrarUsuarios] = useState(false);
   const [modalUsuario, setModalUsuario] = useState(null);
@@ -39,6 +42,7 @@ function Dashboard() {
 
     carregarDashboard();
     carregarPacientes();
+    carregarServicosGerais();
     if (usuario?.perfil === 'admin') carregarUsuarios();
   }, []);
 
@@ -98,6 +102,13 @@ function Dashboard() {
     setMostrarHistorico((v) => !v);
     setFiltroSelecionado(undefined);
     setMostrarUsuarios(false);
+  };
+
+  const carregarServicosGerais = async () => {
+    try {
+      const response = await api.get('/users/servicos-gerais', { headers: { Authorization: `Bearer ${token}` } });
+      setServicosGerais(response.data);
+    } catch {}
   };
 
   const carregarUsuarios = async () => {
@@ -177,10 +188,24 @@ function Dashboard() {
     }
   };
 
-  const handleManutenção = async (bed) => {
+  const handleManutenção = (bed) => {
+    setResponsavelSelecionado('');
+    setModalManutencao(bed);
+  };
+
+  const confirmarManutencao = async () => {
+    if (!responsavelSelecionado) {
+      toast.warning('Selecione o responsável pela manutenção.');
+      return;
+    }
     try {
-      await api.put(`/beds/${bed.id}`, { numero: bed.numero, setor: bed.setor, tipo: bed.tipo, status: 'manutencao' }, { headers: { Authorization: `Bearer ${token}` } });
+      await api.put(
+        `/beds/${modalManutencao.id}`,
+        { numero: modalManutencao.numero, setor: modalManutencao.setor, tipo: modalManutencao.tipo, status: 'manutencao', responsavelId: responsavelSelecionado },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
       toast.success('Leito colocado em manutenção.');
+      setModalManutencao(null);
       recarregar();
     } catch (error) {
       toast.error(error.response?.data?.message || 'Erro ao atualizar leito.');
@@ -296,7 +321,8 @@ function Dashboard() {
                   <th style={styles.th}>Leito</th>
                   <th style={styles.th}>Ação</th>
                   <th style={styles.th}>Paciente</th>
-                  <th style={styles.th}>Responsável</th>
+                  <th style={styles.th}>Operador</th>
+                  <th style={styles.th}>Resp. Manutenção</th>
                 </tr>
               </thead>
               <tbody>
@@ -309,6 +335,7 @@ function Dashboard() {
                     </td>
                     <td style={styles.td}>{h.patientNome || '—'}</td>
                     <td style={styles.td}>{h.userNome || '—'}</td>
+                    <td style={styles.td}>{h.responsavelNome || '—'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -379,6 +406,32 @@ function Dashboard() {
         </div>
       )}
 
+      {modalManutencao && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modalCard}>
+            <h3 style={styles.modalTitle}>Manutenção — Leito {modalManutencao.numero}</h3>
+            <p style={styles.modalSub}>{modalManutencao.setor} — {modalManutencao.tipo}</p>
+            <select
+              value={responsavelSelecionado}
+              onChange={(e) => setResponsavelSelecionado(e.target.value)}
+              style={styles.modalSelect}
+            >
+              <option value="">Selecione o responsável (Serviços Gerais)</option>
+              {servicosGerais.length === 0
+                ? <option disabled>Nenhum usuário de Serviços Gerais cadastrado</option>
+                : servicosGerais.map((u) => (
+                    <option key={u.id} value={u.id}>{u.nome}</option>
+                  ))
+              }
+            </select>
+            <div style={styles.modalAcoes}>
+              <button onClick={confirmarManutencao} style={styles.btnManutencao}>Confirmar</button>
+              <button onClick={() => setModalManutencao(null)} style={styles.btnCancelar}>Cancelar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {modalOcupar && (
         <div style={styles.modalOverlay}>
           <div style={styles.modalCard}>
@@ -420,7 +473,7 @@ function Dashboard() {
                   <th style={styles.th}>Setor</th>
                   <th style={styles.th}>Tipo</th>
                   <th style={styles.th}>Status</th>
-                  <th style={styles.th}>Paciente</th>
+                  <th style={styles.th}>Paciente / Responsável</th>
                   <th style={styles.th}>Ações</th>
                 </tr>
               </thead>
@@ -440,7 +493,10 @@ function Dashboard() {
                       </span>
                     </td>
                     <td style={styles.td}>
-                      {bed.patient ? bed.patient.nome : '—'}
+                      {bed.status === 'manutencao'
+                        ? bed.responsavelManutencaoNome || '—'
+                        : bed.patient ? bed.patient.nome : '—'
+                      }
                     </td>
                     <td style={styles.td}>
                       <div style={styles.acoes}>
@@ -450,7 +506,10 @@ function Dashboard() {
                         {bed.status === 'disponivel' && ['admin','medico','enfermeiro'].includes(usuario?.perfil) && (
                           <button onClick={() => handleManutenção(bed)} style={styles.btnManutencao}>Manutenção</button>
                         )}
-                        {(bed.status === 'ocupado' || bed.status === 'manutencao') && ['admin','medico','enfermeiro'].includes(usuario?.perfil) && (
+                        {bed.status === 'ocupado' && ['admin','medico','enfermeiro'].includes(usuario?.perfil) && (
+                          <button onClick={() => handleLiberar(bed)} style={styles.btnLiberar}>Liberar</button>
+                        )}
+                        {bed.status === 'manutencao' && ['admin','medico','enfermeiro','servicos_gerais'].includes(usuario?.perfil) && (
                           <button onClick={() => handleLiberar(bed)} style={styles.btnLiberar}>Liberar</button>
                         )}
                       </div>

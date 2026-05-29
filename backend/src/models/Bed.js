@@ -35,6 +35,10 @@ const Bed = sequelize.define('Bed', {
   ativo: {
     type: DataTypes.BOOLEAN,
     defaultValue: true
+  },
+  responsavelManutencaoNome: {
+    type: DataTypes.STRING,
+    allowNull: true
   }
 }, {
   tableName: 'beds'

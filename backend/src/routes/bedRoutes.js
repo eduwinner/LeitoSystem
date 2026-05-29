@@ -6,8 +6,9 @@ const authMiddleware = require('../middlewares/authMiddleware');
 const adminMiddleware = require('../middlewares/adminMiddleware');
 const roleMiddleware = require('../middlewares/roleMiddleware');
 
-const podeAlocar    = roleMiddleware('admin', 'medico', 'enfermeiro', 'recepcionista');
-const podeMovimentar = roleMiddleware('admin', 'medico', 'enfermeiro');
+const podeAlocar         = roleMiddleware('admin', 'medico', 'enfermeiro', 'recepcionista');
+const podeMovimentar     = roleMiddleware('admin', 'medico', 'enfermeiro');
+const podeLiberarManutencao = roleMiddleware('admin', 'medico', 'enfermeiro', 'servicos_gerais');
 
 router.get('/dashboard', authMiddleware, controller.getDashboard);
 router.get('/historico', authMiddleware, controller.getHistorico);
@@ -19,6 +20,6 @@ router.get('/inativos', authMiddleware, adminMiddleware, controller.listarInativ
 router.put('/:id/inativar', authMiddleware, adminMiddleware, controller.inativarLeito);
 router.put('/:id/reativar', authMiddleware, adminMiddleware, controller.reativarLeito);
 router.put('/:id/ocupar', authMiddleware, podeAlocar, controller.ocupar);
-router.put('/:id/liberar', authMiddleware, podeMovimentar, controller.liberar);
+router.put('/:id/liberar', authMiddleware, podeLiberarManutencao, controller.liberar);
 
 module.exports = router;

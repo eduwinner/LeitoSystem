@@ -4,13 +4,14 @@ import api from '../services/api';
 import { toast } from 'react-toastify';
 import { confirmarExcluir } from '../services/swal';
 
-const PERFIS = ['admin', 'medico', 'enfermeiro', 'recepcionista'];
+const PERFIS = ['admin', 'medico', 'enfermeiro', 'recepcionista', 'servicos_gerais'];
 
 const LABEL_PERFIL = {
   admin: 'Administrador',
   medico: 'Médico',
   enfermeiro: 'Enfermeiro',
-  recepcionista: 'Recepcionista'
+  recepcionista: 'Recepcionista',
+  servicos_gerais: 'Serviços Gerais'
 };
 
 function Users() {
@@ -167,10 +168,11 @@ function Users() {
 
 function badgeStyle(perfil) {
   const map = {
-    admin:         { backgroundColor: '#dbeafe', color: '#1e40af' },
-    medico:        { backgroundColor: '#dcfce7', color: '#166534' },
-    enfermeiro:    { backgroundColor: '#fef9c3', color: '#854d0e' },
-    recepcionista: { backgroundColor: '#f3e8ff', color: '#6b21a8' }
+    admin:           { backgroundColor: '#dbeafe', color: '#1e40af' },
+    medico:          { backgroundColor: '#dcfce7', color: '#166534' },
+    enfermeiro:      { backgroundColor: '#fef9c3', color: '#854d0e' },
+    recepcionista:   { backgroundColor: '#f3e8ff', color: '#6b21a8' },
+    servicos_gerais: { backgroundColor: '#ffedd5', color: '#9a3412' }
   };
   return map[perfil] || { backgroundColor: '#e2e8f0', color: '#334155' };
 }

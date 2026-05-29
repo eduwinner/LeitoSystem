@@ -1,6 +1,19 @@
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 
+exports.listarServicosGerais = async (req, res) => {
+  try {
+    const users = await User.findAll({
+      where: { perfil: 'servicos_gerais' },
+      attributes: ['id', 'nome'],
+      order: [['nome', 'ASC']]
+    });
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ message: 'Erro ao listar serviços gerais.', error: error.message });
+  }
+};
+
 exports.listar = async (req, res) => {
   try {
     const users = await User.findAll({
@@ -21,7 +34,7 @@ exports.criar = async (req, res) => {
       return res.status(400).json({ message: 'Nome, email, senha e perfil são obrigatórios.' });
     }
 
-    const perfisValidos = ['admin', 'medico', 'enfermeiro', 'recepcionista'];
+    const perfisValidos = ['admin', 'medico', 'enfermeiro', 'recepcionista', 'servicos_gerais'];
     if (!perfisValidos.includes(perfil)) {
       return res.status(400).json({ message: `Perfil inválido. Use: ${perfisValidos.join(', ')}.` });
     }
@@ -53,7 +66,7 @@ exports.atualizar = async (req, res) => {
     if (!user) return res.status(404).json({ message: 'Usuário não encontrado.' });
 
     if (perfil) {
-      const perfisValidos = ['admin', 'medico', 'enfermeiro', 'recepcionista'];
+      const perfisValidos = ['admin', 'medico', 'enfermeiro', 'recepcionista', 'servicos_gerais'];
       if (!perfisValidos.includes(perfil)) {
         return res.status(400).json({ message: `Perfil inválido. Use: ${perfisValidos.join(', ')}.` });
       }
