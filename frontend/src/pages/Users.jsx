@@ -25,12 +25,6 @@ function Users() {
   const [perfil, setPerfil] = useState('enfermeiro');
   const [editandoId, setEditandoId] = useState(null);
 
-  useEffect(() => {
-    if (!token) { navigate('/'); return; }
-    if (usuario?.perfil !== 'admin') { navigate('/dashboard'); return; }
-    carregarUsuarios();
-  }, []);
-
   const carregarUsuarios = async () => {
     try {
       const response = await api.get('/users', { headers: { Authorization: `Bearer ${token}` } });
@@ -39,6 +33,12 @@ function Users() {
       toast.error('Erro ao carregar usuários.');
     }
   };
+
+  useEffect(() => {
+    if (!token) { navigate('/'); return; }
+    if (usuario?.perfil !== 'admin') { navigate('/dashboard'); return; }
+    carregarUsuarios();
+  }, []);
 
   const limpar = () => {
     setNome(''); setEmail(''); setSenha(''); setPerfil('enfermeiro'); setEditandoId(null);

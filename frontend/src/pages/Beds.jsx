@@ -33,14 +33,10 @@ function Beds() {
   const usuario = JSON.parse(localStorage.getItem('usuario'));
 
   useEffect(() => {
-    if (!token) {
-      navigate('/');
-      return;
-    }
-
+    if (!token) { navigate('/'); return; }
     carregarLeitos(1);
     carregarPacientes();
-  }, [navigate]);
+  }, []);
 
   const carregarLeitos = async (pag = pagina, setor = filtroSetor, sts = filtroStatus) => {
     try {

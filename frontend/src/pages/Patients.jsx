@@ -25,28 +25,21 @@ function Patients() {
   const usuario = JSON.parse(localStorage.getItem('usuario'));
   const podeCrud = ['admin', 'medico', 'recepcionista'].includes(usuario?.perfil);
 
-  useEffect(() => {
-    if (!token) {
-      navigate('/');
-      return;
-    }
-
-    carregarPacientes();
-  }, []);
-
   const carregarPacientes = async () => {
     try {
       const response = await api.get('/patients', {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+        headers: { Authorization: `Bearer ${token}` }
       });
-
       setPatients(response.data);
-    } catch (error) {
+    } catch {
       setMensagem('Erro ao carregar pacientes.');
     }
   };
+
+  useEffect(() => {
+    if (!token) { navigate('/'); return; }
+    carregarPacientes();
+  }, []);
 
   const handleSubmit = async (e) => {
   e.preventDefault();
