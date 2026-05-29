@@ -1,4 +1,5 @@
 const Patient = require('../models/Patient');
+const { fn, col } = require('sequelize');
 
 exports.create = async (req, res) => {
   try {
@@ -10,12 +11,19 @@ exports.create = async (req, res) => {
       });
     }
 
+    const ultimo = await Patient.findOne({
+      attributes: [[fn('MAX', col('numeroProntuario')), 'max']],
+      raw: true
+    });
+    const numeroProntuario = (ultimo?.max ?? 0) + 1;
+
     const patient = await Patient.create({
       nome,
       cpf,
       dataNascimento,
       sexo,
-      telefone
+      telefone,
+      numeroProntuario
     });
 
     return res.status(201).json(patient);

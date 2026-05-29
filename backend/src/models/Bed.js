@@ -25,12 +25,16 @@ const Bed = sequelize.define('Bed', {
     allowNull: false,
     defaultValue: 'disponivel',
     validate: {
-      isIn: [['disponivel', 'ocupado', 'manutencao']]
+      isIn: [['disponivel', 'ocupado', 'manutencao', 'inativo']]
     }
   },
   patientId: {
     type: DataTypes.INTEGER,
     allowNull: true
+  },
+  ativo: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
   }
 }, {
   tableName: 'beds'

@@ -26,6 +26,10 @@ const Patient = sequelize.define('Patient', {
   },
   telefone: {
     type: DataTypes.STRING
+  },
+  numeroProntuario: {
+    type: DataTypes.INTEGER,
+    unique: true
   }
 }, {
   tableName: 'patients'

@@ -36,6 +36,7 @@ const login = async (req, res) => {
     return res.status(200).json({
       message: 'Login realizado com sucesso.',
       token,
+      trocaSenhaObrigatoria: user.trocaSenhaObrigatoria,
       usuario: {
         id: user.id,
         nome: user.nome,
@@ -70,7 +71,21 @@ const perfil = async (req, res) => {
   }
 };
 
-module.exports = {
-  login,
-  perfil
+const trocarSenha = async (req, res) => {
+  try {
+    const { novaSenha } = req.body;
+    if (!novaSenha || novaSenha.length < 6) {
+      return res.status(400).json({ message: 'A nova senha deve ter no mínimo 6 caracteres.' });
+    }
+    const user = await User.findByPk(req.user.id);
+    if (!user) return res.status(404).json({ message: 'Usuário não encontrado.' });
+    user.senha = await bcrypt.hash(novaSenha, 10);
+    user.trocaSenhaObrigatoria = false;
+    await user.save();
+    return res.json({ message: 'Senha alterada com sucesso.' });
+  } catch (error) {
+    return res.status(500).json({ message: 'Erro ao alterar senha.', error: error.message });
+  }
 };
+
+module.exports = { login, perfil, trocarSenha };

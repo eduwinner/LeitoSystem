@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { toast } from 'react-toastify';
+import { confirmarExcluir } from '../services/swal';
+import { mascararCpf, ocultarCpf, mascararTelefone, formatarData, formatarProntuario } from '../utils/formatters';
+import { validarCpf } from '../utils/validators';
 
 
 function Patients() {
@@ -15,8 +18,12 @@ function Patients() {
   const [telefone, setTelefone] = useState('');
   const [mensagem, setMensagem] = useState('');
   const [editandoId, setEditandoId] = useState(null);
+  const [cpfOriginal, setCpfOriginal] = useState('');
+  const [cpfMascarado, setCpfMascarado] = useState(false);
 
   const token = localStorage.getItem('token');
+  const usuario = JSON.parse(localStorage.getItem('usuario'));
+  const podeCrud = ['admin', 'medico', 'recepcionista'].includes(usuario?.perfil);
 
   useEffect(() => {
     if (!token) {
@@ -45,15 +52,21 @@ function Patients() {
   e.preventDefault();
 
   try {
+    const cpfLimpo = cpfMascarado ? cpfOriginal : cpf.replace(/\D/g, '');
+    if (!cpfMascarado && !validarCpf(cpfLimpo)) {
+      toast.error('CPF inválido. Verifique os dígitos informados.');
+      return;
+    }
+    const telefoneLimpo = telefone.replace(/\D/g, '');
     if (editandoId) {
       await api.put(
         `/patients/${editandoId}`,
         {
           nome,
-          cpf,
+          cpf: cpfLimpo,
           dataNascimento,
           sexo,
-          telefone
+          telefone: telefoneLimpo
         },
         {
           headers: {
@@ -68,10 +81,10 @@ function Patients() {
         '/patients',
         {
           nome,
-          cpf,
+          cpf: cpfLimpo,
           dataNascimento,
           sexo,
-          telefone
+          telefone: telefoneLimpo
         },
         {
           headers: {
@@ -90,6 +103,8 @@ function Patients() {
     setSexo('');
     setTelefone('');
     setEditandoId(null);
+    setCpfOriginal('');
+    setCpfMascarado(false);
 
     carregarPacientes();
 
@@ -102,17 +117,19 @@ function Patients() {
 
   const handleEditar = (patient) => {
   setNome(patient.nome);
-  setCpf(patient.cpf);
+  setCpfOriginal(patient.cpf);
+  setCpf(ocultarCpf(patient.cpf));
+  setCpfMascarado(true);
   setDataNascimento(patient.dataNascimento);
   setSexo(patient.sexo);
-  setTelefone(patient.telefone);
+  setTelefone(mascararTelefone(patient.telefone || ''));
   setEditandoId(patient.id);
 };
 
-const handleExcluir = async (id) => {
-  const confirmar = window.confirm('Deseja excluir este paciente?');
 
-  if (!confirmar) return;
+const handleExcluir = async (id) => {
+  const { isConfirmed } = await confirmarExcluir('Excluir paciente?', 'Esta ação não pode ser desfeita.');
+  if (!isConfirmed) return;
 
   try {
     await api.delete(`/patients/${id}`, {
@@ -128,6 +145,7 @@ const handleExcluir = async (id) => {
 
   return (
     <div style={styles.container}>
+
       <header style={styles.header}>
         <div>
           <h1 style={styles.title}>LeitoSystem</h1>
@@ -145,8 +163,8 @@ const handleExcluir = async (id) => {
       </header>
 
       <main style={styles.main}>
-        <section style={styles.card}>
-          <h2 style={styles.sectionTitle}>Cadastrar Paciente</h2>
+        {podeCrud && <section style={styles.card}>
+          <h2 style={styles.sectionTitle}>{editandoId ? 'Editar Paciente' : 'Cadastrar Paciente'}</h2>
 
           <form onSubmit={handleSubmit} style={styles.form}>
             <input
@@ -159,9 +177,11 @@ const handleExcluir = async (id) => {
 
             <input
               type="text"
-              placeholder="CPF"
+              placeholder="CPF (000.000.000-00)"
               value={cpf}
-              onChange={(e) => setCpf(e.target.value)}
+              onFocus={() => { if (cpfMascarado) { setCpf(''); setCpfMascarado(false); } }}
+              onChange={(e) => setCpf(mascararCpf(e.target.value))}
+              maxLength={14}
               style={styles.input}
             />
 
@@ -184,9 +204,10 @@ const handleExcluir = async (id) => {
 
             <input
               type="text"
-              placeholder="Telefone"
+              placeholder="Telefone ((00) 00000-0000)"
               value={telefone}
-              onChange={(e) => setTelefone(e.target.value)}
+              onChange={(e) => setTelefone(mascararTelefone(e.target.value))}
+              maxLength={15}
               style={styles.input}
             />
 
@@ -196,9 +217,9 @@ const handleExcluir = async (id) => {
           </form>
 
           {mensagem && <p style={styles.message}>{mensagem}</p>}
-        </section>
+        </section>}
 
-        <section style={styles.card}>
+        <section style={{ ...styles.card, gridColumn: !podeCrud ? '1 / -1' : 'auto' }}>
           <h2 style={styles.sectionTitle}>Lista de Pacientes</h2>
 
           {patients.length === 0 ? (
@@ -207,41 +228,35 @@ const handleExcluir = async (id) => {
             <table style={styles.table}>
               <thead>
                 <tr>
+                  <th style={styles.th}>Prontuário</th>
                   <th style={styles.th}>Nome</th>
                   <th style={styles.th}>CPF</th>
                   <th style={styles.th}>Data Nasc.</th>
                   <th style={styles.th}>Sexo</th>
                   <th style={styles.th}>Telefone</th>
+                  {podeCrud && <th style={styles.th}>Ações</th>}
                 </tr>
               </thead>
 
               <tbody>
                 {patients.map((p) => (
                   <tr key={p.id}>
+                    <td style={styles.td}>{formatarProntuario(p.numeroProntuario)}</td>
                     <td style={styles.td}>{p.nome}</td>
-                    <td style={styles.td}>{p.cpf}</td>
-                    <td style={styles.td}>{p.dataNascimento}</td>
+                    <td style={styles.td}>{ocultarCpf(p.cpf)}</td>
+                    <td style={styles.td}>{formatarData(p.dataNascimento)}</td>
                     <td style={styles.td}>{p.sexo}</td>
-                    <td style={styles.td}>{p.telefone}</td>
+                    <td style={styles.td}>{mascararTelefone(p.telefone || '')}</td>
 
                     
-                    <td style={styles.td}>
-                      <div style={styles.actions}>
-                        <button
-                          onClick={() => handleEditar(p)}
-                          style={styles.editButton}
-                        >
-                          Editar
-                        </button>
-
-                        <button
-                          onClick={() => handleExcluir(p.id)}
-                          style={styles.deleteButton}
-                        >
-                          Excluir
-                        </button>
-                      </div>
-                    </td>
+                    {podeCrud && (
+                      <td style={styles.td}>
+                        <div style={styles.actions}>
+                          <button onClick={() => handleEditar(p)} style={styles.editButton}>Editar</button>
+                          <button onClick={() => handleExcluir(p.id)} style={styles.deleteButton}>Excluir</button>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -354,11 +369,13 @@ deleteButton: {
   },
   th: {
     padding: '12px',
-    backgroundColor: '#eff6ff'
+    backgroundColor: '#eff6ff',
+    textAlign: 'left'
   },
   td: {
     padding: '12px',
-    borderBottom: '1px solid #eee'
+    borderBottom: '1px solid #eee',
+    textAlign: 'left'
   },
   message: {
     marginTop: '12px'

@@ -23,7 +23,11 @@ function Login() {
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('usuario', JSON.stringify(response.data.usuario));
 
-      navigate('/dashboard');
+      if (response.data.trocaSenhaObrigatoria) {
+        navigate('/trocar-senha');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (error) {
       setMensagem('Email ou senha inválidos');
     }
