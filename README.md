@@ -1,181 +1,191 @@
-#  LeitoSystem
+# LeitoSystem
 
-Sistema web para gerenciamento de leitos hospitalares.
+![CI](https://github.com/eduwinner/LeitoSystem/actions/workflows/ci.yml/badge.svg)
 
----
-
-##  Sobre o Projeto
-
-O **LeitoSystem** é uma aplicação full stack desenvolvida com o objetivo de gerenciar leitos hospitalares de forma eficiente, organizada e transparente.
-
-O sistema permite:
-- Controle de leitos
-- Gestão de pacientes
-- Ocupação hospitalar em tempo real
-- Visualização de métricas através de dashboard
-
-Este projeto foi desenvolvido como parte do **Trabalho de Conclusão de Curso (TCC)** em Engenharia de Software.
+Sistema web para gerenciamento de leitos hospitalares desenvolvido como **Projeto de Finalização de Curso (PFC II)** da **UniEvangélica — Engenharia de Software**.
 
 ---
 
-##  Funcionalidades
+## Sobre o Projeto
 
-###  Autenticação e Segurança
-- Login com JWT
-- Criptografia de senha com bcrypt
-- Controle de acesso por perfil (admin)
-
-###  Gestão de Leitos
-- Cadastro de leitos
-- Edição de leitos
-- Exclusão de leitos
-- Listagem com filtros por setor e status
-- Status visual:
-  -  Disponível
-  -  Ocupado
-  -  Manutenção
-
-###  Gestão de Pacientes
-- Cadastro de pacientes
-- Listagem de pacientes
-- Integração com leitos (ocupação/liberação)
-
-###  Dashboard (Métricas)
-- Total de leitos
-- Leitos disponíveis
-- Leitos ocupados
-- Leitos em manutenção
-- Taxa de ocupação (%)
+O **LeitoSystem** é uma aplicação full stack que permite a gestão completa do ciclo de vida de leitos hospitalares: cadastro, alocação de pacientes, controle de manutenção, histórico de movimentação e métricas em tempo real via dashboard operacional.
 
 ---
 
-##  Tecnologias Utilizadas
+## Funcionalidades
+
+### Autenticação e Segurança
+- Login com JWT (expira em 8h)
+- Senhas armazenadas com bcrypt (hash + salt)
+- Troca de senha obrigatória no primeiro acesso
+- Controle de acesso por perfil (RBAC)
+- Rate limiting na rota de login (10 tentativas / 15 min)
+- CORS restrito por origem via variável de ambiente
+- Headers de segurança HTTP com Helmet
+
+### Perfis de Acesso
+
+| Ação | Admin | Médico | Enfermeiro | Recepcionista |
+|---|:---:|:---:|:---:|:---:|
+| Gerenciar usuários | ✅ | ❌ | ❌ | ❌ |
+| CRUD leitos | ✅ | ❌ | ❌ | ❌ |
+| Alocar paciente | ✅ | ✅ | ✅ | ✅ |
+| Manutenção / Liberar | ✅ | ✅ | ✅ | ❌ |
+| CRUD pacientes | ✅ | ✅ | ❌ | ✅ |
+| Ver leitos / dashboard | ✅ | ✅ | ✅ | ✅ |
+
+### Gestão de Leitos
+- CRUD completo (admin)
+- Status: Disponível · Ocupado · Manutenção
+- Inativação com preservação de histórico (leitos usados não são excluídos)
+- Reativação de leitos inativos
+- Listagem com filtros por setor e status (server-side)
+- Paginação server-side (20 leitos por página)
+- Ordenação alfabética por número
+
+### Gestão de Pacientes
+- Cadastro com validação de CPF (algoritmo oficial)
+- Máscara de CPF e telefone no formulário
+- CPF exibido mascarado na listagem (LGPD: `123.***.***-90`)
+- Data de nascimento em formato brasileiro
+- Número de prontuário autoincrement (`PRN-000001`)
+- Proteção de edição: CPF não exposto ao clicar em editar
+
+### Alocação de Leitos
+- Modal de alocação com seleção de paciente por nome e data de nascimento
+- Filtragem automática de pacientes já alocados
+- Confirmação com SweetAlert2 antes de liberar
+
+### Dashboard Operacional
+- Cards clicáveis: Total · Disponíveis · Ocupados · Manutenção · Taxa de Ocupação
+- Ações diretas na listagem (alocar, manutenção, liberar) sem sair do dashboard
+- Histórico completo de movimentação (alocações, liberações, manutenções)
+- Gerenciamento de usuários inline (admin)
+- Paginação na listagem de leitos do dashboard
+
+### Histórico de Movimentação
+- Registro automático de cada alocação, liberação e manutenção
+- Dados: leito, paciente, ação, responsável, data/hora
+- Consultável diretamente no dashboard
+
+---
+
+## Tecnologias
 
 ### Backend
-- Node.js
-- Express
-- Sequelize (ORM)
-- PostgreSQL
-- JSON Web Token (JWT)
-- Bcrypt
+| Tecnologia | Versão | Uso |
+|---|---|---|
+| Node.js | 20+ | Runtime |
+| Express | 4.x | Framework HTTP |
+| Sequelize | 6.x | ORM |
+| PostgreSQL | — | Banco de dados |
+| JWT | — | Autenticação |
+| bcryptjs | — | Hash de senhas |
+| Helmet | — | Headers de segurança |
+| express-rate-limit | — | Rate limiting |
 
 ### Frontend
-- React
-- Vite
-- Axios
-- React Router DOM
+| Tecnologia | Versão | Uso |
+|---|---|---|
+| React | 19.x | UI |
+| Vite | 5.x | Build tool |
+| React Router DOM | 7.x | Navegação |
+| Axios | 1.x | HTTP client |
+| React Toastify | — | Notificações |
+| SweetAlert2 | — | Diálogos de confirmação |
+
+### Qualidade e CI
+| Ferramenta | Uso |
+|---|---|
+| Jest | Testes unitários backend |
+| Vitest | Testes unitários frontend |
+| ESLint 9 | Lint frontend |
+| GitHub Actions | Pipeline de CI |
 
 ---
 
-##  Arquitetura do Projeto
+## Testes
 
-O sistema segue uma arquitetura full stack separada:
-
+### Backend (Jest) — 12 testes
 ```bash
+cd backend
+npm test
+```
+Cobre: `authMiddleware`, `roleMiddleware`, `adminMiddleware`
+
+### Frontend (Vitest) — 27 testes
+```bash
+cd frontend
+npm test
+```
+Cobre: `mascararCpf`, `ocultarCpf`, `mascararTelefone`, `formatarData`, `formatarProntuario`, `formatarTipo`, `formatarStatus`, `validarCpf`
+
+---
+
+## Arquitetura
+
+```
 LeitoSystem/
-│
+├── .github/workflows/ci.yml   # Pipeline CI (GitHub Actions)
 ├── backend/
-│   ├── src/
-│   │   ├── controllers/
-│   │   ├── models/
-│   │   ├── routes/
-│   │   ├── middlewares/
-│   │   └── config/
-│
-├── frontend/
-│   ├── src/
-│   │   ├── pages/
-│   │   ├── services/
-│   │   └── components/
+│   └── src/
+│       ├── __tests__/         # Testes Jest
+│       ├── config/            # Conexão banco
+│       ├── controllers/       # Lógica de negócio
+│       ├── middlewares/       # auth, role, admin
+│       ├── models/            # User, Bed, Patient, BedHistory
+│       └── routes/            # auth, beds, patients, users
+└── frontend/
+    └── src/
+        ├── pages/             # Login, Dashboard, Beds, Patients, Users, TrocarSenha
+        ├── services/          # api.js (Axios), swal.js (SweetAlert2)
+        └── utils/             # formatters.js, validators.js (+ testes)
 ```
 
+---
+
+## Como Executar
+
+### Pré-requisitos
+- Node.js 20+
+- PostgreSQL
+
 ### Backend
-- API REST
-- Regras de negócio
-- Autenticação e autorização
-- Integração com banco PostgreSQL
-
-### Frontend
-- Interface SPA com React
-- Consumo da API via Axios
-- Navegação com React Router
-
----
-
-##  Funcionalidades Implementadas
-
-- Tela de login
-- Autenticação com JWT
-- Proteção de rotas
-- Dashboard com métricas
-- CRUD completo de leitos
-- CRUD de pacientes
-- Ocupação e liberação de leitos
-- Navegação entre páginas (Dashboard, Leitos, Pacientes)
-
----
-
-##  Credenciais de Teste
-Email: admin@leitosystem.com
-
-Senha: 123456
-
-
-##  Como executar o projeto
-
-###  Pré-requisitos
-
-- Node.js instalado
-- NPM ou Yarn
-- PostgreSQL instalado
-
----
-
-##  Backend
 
 ```bash
 cd backend
 npm install
 ```
 
-Crie um arquivo `.env` dentro da pasta **backend**:
+Crie `backend/.env`:
 
 ```env
 DB_NAME=leitosystem
 DB_USER=postgres
-DB_PASSWORD=
+DB_PASSWORD=sua_senha
 DB_HOST=localhost
 DB_PORT=5432
 JWT_SECRET=sua_chave_secreta
+PORT=3001
+CORS_ORIGINS=http://localhost:5173,http://localhost:5174
 ```
 
-Crie o banco de dados no PostgreSQL:
-
-```bash
-leitosystem
+Crie o banco no PostgreSQL:
+```sql
+CREATE DATABASE leitosystem;
 ```
 
-Execute o seed:
-
-```bash
-npm run seed
-```
-
-Inicie o servidor:
-
+Inicie o servidor (sincroniza tabelas automaticamente):
 ```bash
 npm run dev
 ```
 
-API disponível em:
-
+Crie o usuário admin inicial:
+```bash
+npm run seed
 ```
-http://localhost:3001
-```
 
----
-
-##  Frontend
+### Frontend
 
 ```bash
 cd frontend
@@ -183,63 +193,51 @@ npm install
 npm run dev
 ```
 
-Aplicação disponível em:
-
-```
-http://localhost:5173
-```
+Aplicação disponível em `http://localhost:5173`
 
 ---
 
-##  Fluxo de Autenticação
+## Credenciais de Teste
 
-1. O usuário insere e-mail e senha  
-2. O frontend envia a requisição para o backend  
-3. O backend valida as credenciais no banco de dados  
-4. A senha é verificada com bcrypt  
-5. Um token JWT é gerado  
-6. O token é armazenado no navegador (localStorage)  
-7. Rotas protegidas utilizam o token para autenticação  
+| Campo | Valor |
+|---|---|
+| E-mail | `admin@leitosystem.com` |
+| Senha | `123456` |
+
+> Na primeira vez que um usuário criado pelo admin fizer login, será solicitada a troca de senha.
 
 ---
 
-##  Banco de Dados
+## Banco de Dados
 
-O sistema utiliza PostgreSQL como banco de dados relacional.
+| Tabela | Descrição |
+|---|---|
+| `users` | Usuários do sistema com perfil de acesso |
+| `beds` | Leitos com status e FK para paciente alocado |
+| `patients` | Pacientes com CPF único e número de prontuário |
+| `bed_history` | Histórico de movimentação dos leitos |
 
-###  Tabela: users
+---
 
-- id  
-- nome  
-- email  
-- senha  
-- perfil  
+## CI/CD
 
-###  Tabela: beds
+O pipeline executa automaticamente a cada push ou pull request para `main`:
 
-- id  
-- numero  
-- setor  
-- tipo  
-- status  
-- patientId (relacionamento)  
+1. **Backend Tests** — Jest com cobertura
+2. **Frontend Tests** — Vitest com cobertura
+3. **Lint** — ESLint 9
 
+---
 
-### Objetivo do Projeto
+## Autores
 
-Desenvolver uma solução que auxilie instituições de saúde no gerenciamento de leitos, reduzindo gargalos, aumentando a eficiência operacional e melhorando a tomada de decisão.
+**Wagdo Junior · Windson · Diego**
+Estudantes de Engenharia de Software — UniEvangélica
 
-### Autores
-Wagdo Junior
-Windson
-Diego
+## Orientadores
 
-Estudantes de Engenharia de Software
+**Eduardo Dias Pereira · Vinicius Siqueira · Renato Luan**
 
-### Orientadores
-Eduardo Dias Pereira
-Vinicius Siqueira
-Renato Luan
+---
 
-### Licença
-Este projeto é de uso acadêmico.
+*Projeto acadêmico — UniEvangélica 2026*
