@@ -25,14 +25,16 @@ O **LeitoSystem** é uma aplicação full stack que permite a gestão completa d
 
 ### Perfis de Acesso
 
-| Ação | Admin | Médico | Enfermeiro | Recepcionista |
-|---|:---:|:---:|:---:|:---:|
-| Gerenciar usuários | ✅ | ❌ | ❌ | ❌ |
-| CRUD leitos | ✅ | ❌ | ❌ | ❌ |
-| Alocar paciente | ✅ | ✅ | ✅ | ✅ |
-| Manutenção / Liberar | ✅ | ✅ | ✅ | ❌ |
-| CRUD pacientes | ✅ | ✅ | ❌ | ✅ |
-| Ver leitos / dashboard | ✅ | ✅ | ✅ | ✅ |
+| Ação | Admin | Médico | Enfermeiro | Recepcionista | Serviços Gerais |
+|---|:---:|:---:|:---:|:---:|:---:|
+| Gerenciar usuários | ✅ | ❌ | ❌ | ❌ | ❌ |
+| CRUD leitos | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Alocar paciente | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Colocar em manutenção | ✅ | ✅ | ✅ | ❌ | ❌ |
+| Liberar leito ocupado | ✅ | ✅ | ✅ | ❌ | ❌ |
+| Liberar leito em manutenção | ✅ | ✅ | ✅ | ❌ | ✅ |
+| CRUD pacientes | ✅ | ✅ | ❌ | ✅ | ❌ |
+| Ver leitos / dashboard | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ### Gestão de Leitos
 - CRUD completo (admin)
@@ -63,9 +65,15 @@ O **LeitoSystem** é uma aplicação full stack que permite a gestão completa d
 - Gerenciamento de usuários inline (admin)
 - Paginação na listagem de leitos do dashboard
 
+### Rastreabilidade de Manutenção
+- Ao colocar um leito em manutenção, é obrigatório selecionar o funcionário responsável (perfil Serviços Gerais)
+- Nome do responsável exibido na listagem de leitos (badge laranja) enquanto em manutenção
+- Serviços Gerais pode liberar o leito ao concluir a manutenção
+- Responsável gravado no histórico tanto na entrada quanto na saída da manutenção
+
 ### Histórico de Movimentação
 - Registro automático de cada alocação, liberação e manutenção
-- Dados: leito, paciente, ação, responsável, data/hora
+- Dados: leito, paciente, ação, operador, responsável pela manutenção, data/hora
 - Consultável diretamente no dashboard
 
 ---
@@ -212,10 +220,10 @@ Aplicação disponível em `http://localhost:5173`
 
 | Tabela | Descrição |
 |---|---|
-| `users` | Usuários do sistema com perfil de acesso |
+| `users` | Usuários do sistema com perfil de acesso (admin, medico, enfermeiro, recepcionista, servicos_gerais) |
 | `beds` | Leitos com status e FK para paciente alocado |
 | `patients` | Pacientes com CPF único e número de prontuário |
-| `bed_history` | Histórico de movimentação dos leitos |
+| `bed_history` | Histórico de movimentação (operador + responsável pela manutenção) |
 
 ---
 
